@@ -152,7 +152,8 @@ func sendChanges(w *fsnotify.Watcher, changes chan<- time.Time) {
 }
 
 func modTime(p string) (time.Time, error) {
-	switch s, err := os.Stat(p); {
+	s, err := os.Stat(p)
+	switch {
 	case os.IsNotExist(err):
 		q := path.Dir(p)
 		if q == p {
@@ -163,10 +164,8 @@ func modTime(p string) (time.Time, error) {
 
 	case err != nil:
 		return time.Time{}, err
-
-	default:
-		return s.ModTime(), nil
 	}
+	return s.ModTime(), nil
 }
 
 func watchDir(w *fsnotify.Watcher, p string) {
@@ -207,14 +206,14 @@ func watch(w *fsnotify.Watcher, p string) {
 }
 
 func isDir(p string) (bool, error) {
-	switch s, err := os.Stat(p); {
+	s, err := os.Stat(p)
+	switch {
 	case os.IsNotExist(err):
 		return false, nil
 	case err != nil:
 		return false, err
-	default:
-		return s.IsDir(), nil
 	}
+	return s.IsDir(), nil
 }
 
 func debugPrint(f string, vals ...interface{}) {
