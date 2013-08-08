@@ -17,7 +17,7 @@ import (
 
 var (
 	debug = flag.Bool("d", false, "Enable debugging output")
-	term = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
+	term  = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
 )
 
 type ui interface {
@@ -28,7 +28,7 @@ type ui interface {
 
 type writerUi struct {
 	io.Writer
-	rr chan struct{}	// nothing ever sent on this channel.
+	rr chan struct{} // nothing ever sent on this channel.
 }
 
 func (w writerUi) redisplay(f func(io.Writer)) {
@@ -83,16 +83,16 @@ func run(ui ui) time.Time {
 	cmd.Stderr = w
 
 	ui.redisplay(func(out io.Writer) {
-		io.WriteString(out, strings.Join(flag.Args(), " ") + "\n")
+		io.WriteString(out, strings.Join(flag.Args(), " ")+"\n")
 		go func() {
 			if _, err := io.Copy(out, r); err != nil {
 				log.Fatalln("Failed to copy command output to the display:", err)
 			}
 		}()
 		if err := cmd.Run(); err != nil {
-			io.WriteString(out, err.Error() + "\n")
+			io.WriteString(out, err.Error()+"\n")
 		}
-		io.WriteString(out, time.Now().String() + "\n")
+		io.WriteString(out, time.Now().String()+"\n")
 	})
 
 	return time.Now()
@@ -126,7 +126,7 @@ func sendChanges(w *fsnotify.Watcher, changes chan<- time.Time) {
 		case err := <-w.Error:
 			log.Fatalf("Watcher error: %s\n", err)
 
-		case ev := <- w.Event:
+		case ev := <-w.Event:
 			time, err := modTime(ev.Name)
 			if err != nil {
 				log.Printf("Failed to get even time: %s", err)
@@ -157,7 +157,7 @@ func modTime(p string) (time.Time, error) {
 	case os.IsNotExist(err):
 		q := path.Dir(p)
 		if q == p {
-			err := errors.New("Failed to find directory for removed file " + p) 
+			err := errors.New("Failed to find directory for removed file " + p)
 			return time.Time{}, err
 		}
 		return modTime(q)
@@ -179,7 +179,7 @@ func watchDir(w *fsnotify.Watcher, p string) {
 	}
 
 	for _, e := range ents {
-		sub := path.Join(p, e.Name())	
+		sub := path.Join(p, e.Name())
 		isdir, err := isDir(sub)
 		if err != nil {
 			log.Printf("Failed to watch %s: %s", sub, err)
@@ -218,6 +218,6 @@ func isDir(p string) (bool, error) {
 
 func debugPrint(f string, vals ...interface{}) {
 	if *debug {
-		log.Printf("DEBUG: " + f, vals...)
+		log.Printf("DEBUG: "+f, vals...)
 	}
 }

@@ -13,7 +13,7 @@ import (
 
 type winUi struct {
 	win *acme.Win
-	rr chan struct{}
+	rr  chan struct{}
 }
 
 func newWin(watchPath string) (ui, error) {
@@ -45,7 +45,7 @@ func newWin(watchPath string) (ui, error) {
 	win.Fprintf("tag", "Get ")
 
 	rerun := make(chan struct{})
-	go func(rerun chan<-struct{}){
+	go func(rerun chan<- struct{}) {
 		for e := range win.EventChan() {
 			if e.C2 != 'x' && e.C2 != 'X' {
 				continue
@@ -67,7 +67,7 @@ func newWin(watchPath string) (ui, error) {
 		os.Exit(0)
 	}(rerun)
 
-	return winUi{ win, rerun }, nil
+	return winUi{win, rerun}, nil
 }
 
 func (w winUi) rerun() <-chan struct{} {
