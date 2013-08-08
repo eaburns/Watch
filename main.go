@@ -42,9 +42,7 @@ func (w writerUi) rerun() <-chan struct{} {
 func main() {
 	flag.Parse()
 
-	tick := time.NewTicker(time.Second)
 	watchPath := "."
-	changes := startWatching(watchPath)
 
 	ui := ui(writerUi{os.Stdout, make(chan struct{})})
 	if !*term {
@@ -54,20 +52,20 @@ func main() {
 		}
 	}
 
-	lastRun := run(ui)
-	lastChange := time.Time{}
+	timer := time.NewTimer(0)
+	changes := startWatching(watchPath)
+	lastRun := time.Time{}
+	lastChange := time.Now()
 
 	for {
 		select {
 		case lastChange = <-changes:
+			timer.Reset(time.Second)
 
-		case <-tick.C:
+		case <-timer.C:
 			if lastRun.Before(lastChange) {
 				lastRun = run(ui)
 			}
-
-		case <-ui.rerun():
-			lastRun = run(ui)
 		}
 	}
 }
