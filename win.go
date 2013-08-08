@@ -45,12 +45,15 @@ func newWin(watchPath string) (ui, error) {
 	win.Fprintf("tag", "Get ")
 
 	rerun := make(chan struct{})
-	go func(rerun chan<- struct{}) {
-		for e := range win.EventChan() {
-			if e.C2 != 'x' && e.C2 != 'X' {
-				continue
-			}
+	go events(win, rerun)
 
+	return winUi{win, rerun}, nil
+}
+
+func events(win *acme.Win, rerun chan<- struct{}) {
+	for e := range win.EventChan() {
+		switch e.C2 {
+		case 'x', 'X':
 			switch string(e.Text) {
 			case "Get":
 				rerun <- struct{}{}
@@ -63,11 +66,12 @@ func newWin(watchPath string) (ui, error) {
 			default:
 				win.WriteEvent(e)
 			}
-		}
-		os.Exit(0)
-	}(rerun)
 
-	return winUi{win, rerun}, nil
+		default:
+			win.WriteEvent(e)
+		}
+	}
+	os.Exit(0)
 }
 
 func (w winUi) rerun() <-chan struct{} {
