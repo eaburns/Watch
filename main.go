@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,15 +17,44 @@ import (
 
 var (
 	debug = flag.Bool("d", false, "Enable debugging output")
+	win = flag.Bool("w", true, "Run in an acme win")
 )
+
+type ui interface {
+	redisplay(func(io.Writer))
+	// An empty struct is sent when the command should be rerun.
+	rerun() <-chan struct{}
+}
+
+type writerUi struct {
+	io.Writer
+	rr chan struct{}	// nothing ever sent on this channel.
+}
+
+func (w writerUi) redisplay(f func(io.Writer)) {
+	f(w)
+}
+
+func (w writerUi) rerun() <-chan struct{} {
+	return w.rr
+}
 
 func main() {
 	flag.Parse()
 
 	tick := time.NewTicker(time.Second)
-	changes := startWatching(".")
+	watchPath := "."
+	changes := startWatching(watchPath)
 
-	lastRun := run()
+	ui := ui(writerUi{os.Stdout, make(chan struct{})})
+	if *win {
+		var err error
+		if ui, err = newWin(watchPath); err != nil {
+			log.Fatalln("Failed to open a win:", err)
+		}
+	}
+
+	lastRun := run(ui)
 	lastChange := time.Time{}
 
 	for {
@@ -33,22 +63,37 @@ func main() {
 
 		case <-tick.C:
 			if lastRun.Before(lastChange) {
-				lastRun = run()
+				lastRun = run(ui)
 			}
+
+		case <-ui.rerun():
+			lastRun = run(ui)
 		}
 	}
 }
 
-func run() time.Time {
-	os.Stdout.WriteString(strings.Join(flag.Args(), " ") + "\n")
+func run(ui ui) time.Time {
+	r, w, err := os.Pipe()
+	if err != nil {
+		log.Fatalln("Failed to create a pipe:", err)
+	}
 
 	cmd := exec.Command(flag.Arg(0), flag.Args()[1:]...)
-	out, err := cmd.CombinedOutput()
-	os.Stdout.WriteString(string(out))
-	if err != nil {
-		os.Stdout.WriteString(err.Error() + "\n")
-	}
-	os.Stdout.WriteString(time.Now().String() + "\n")
+	cmd.Stdout = w
+	cmd.Stderr = w
+
+	ui.redisplay(func(out io.Writer) {
+		io.WriteString(out, strings.Join(flag.Args(), " ") + "\n")
+		go func() {
+			if _, err := io.Copy(out, r); err != nil {
+				log.Fatalln("Failed to copy command output to the display:", err)
+			}
+		}()
+		if err := cmd.Run(); err != nil {
+			io.WriteString(out, err.Error() + "\n")
+		}
+		io.WriteString(out, time.Now().String() + "\n")
+	})
 
 	return time.Now()
 }
