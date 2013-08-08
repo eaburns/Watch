@@ -20,7 +20,7 @@ var (
 	term  = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
 )
 
-const rebuildDelay = 200*time.Millisecond
+const rebuildDelay = 200 * time.Millisecond
 
 type ui interface {
 	redisplay(func(io.Writer))
