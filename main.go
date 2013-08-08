@@ -20,6 +20,8 @@ var (
 	term  = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
 )
 
+const rebuildDelay = 200*time.Millisecond
+
 type ui interface {
 	redisplay(func(io.Writer))
 	// An empty struct is sent when the command should be rerun.
@@ -60,7 +62,7 @@ func main() {
 	for {
 		select {
 		case lastChange = <-changes:
-			timer.Reset(time.Second)
+			timer.Reset(rebuildDelay)
 
 		case <-timer.C:
 			if lastRun.Before(lastChange) {
