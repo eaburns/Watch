@@ -17,7 +17,7 @@ import (
 
 var (
 	debug = flag.Bool("d", false, "Enable debugging output")
-	win = flag.Bool("w", true, "Run in an acme win")
+	term = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
 )
 
 type ui interface {
@@ -47,7 +47,7 @@ func main() {
 	changes := startWatching(watchPath)
 
 	ui := ui(writerUi{os.Stdout, make(chan struct{})})
-	if *win {
+	if !*term {
 		var err error
 		if ui, err = newWin(watchPath); err != nil {
 			log.Fatalln("Failed to open a win:", err)

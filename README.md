@@ -1,8 +1,8 @@
 Watch
 =====
 
-Usage: Watch [-d] [-w=false] <command>
+Usage: Watch [-d] [-t] <command>
 
 Watches for changes in a directory tree, and runs a command when
 something changed. By default, an acme win is opened for the output.
-Setting the -w flag to false will send output to standard output.
+Use -t to send the output to the terminal instead of acme.
