@@ -157,7 +157,7 @@ func modTime(p string) (time.Time, error) {
 	case os.IsNotExist(err):
 		q := path.Dir(p)
 		if q == p {
-			err := errors.New("Failed to find directory for removed file " + p)
+			err := errors.New("Failed to find directory for " + p)
 			return time.Time{}, err
 		}
 		return modTime(q)
