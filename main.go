@@ -64,6 +64,9 @@ func main() {
 		case lastChange = <-changes:
 			timer.Reset(rebuildDelay)
 
+		case <-ui.rerun():
+			lastRun = run(ui)
+
 		case <-timer.C:
 			if lastRun.Before(lastChange) {
 				lastRun = run(ui)

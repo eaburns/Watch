@@ -52,6 +52,7 @@ func newWin(watchPath string) (ui, error) {
 
 func events(win *acme.Win, rerun chan<- struct{}) {
 	for e := range win.EventChan() {
+		debugPrint("Acme event: %+v\n", e)
 		switch e.C2 {
 		case 'x', 'X':
 			switch string(e.Text) {
