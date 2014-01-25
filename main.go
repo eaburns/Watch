@@ -17,9 +17,10 @@ import (
 )
 
 var (
-	debug   = flag.Bool("v", false, "Enable verbose debugging output")
-	term    = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
-	exclude = flag.String("x", "", "Exclude files and directories matching this regular expression")
+	debug     = flag.Bool("v", false, "Enable verbose debugging output")
+	term      = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
+	exclude   = flag.String("x", "", "Exclude files and directories matching this regular expression")
+	watchPath = flag.String("p", ".", "The path to watch")
 )
 
 var excludeRe *regexp.Regexp
@@ -48,12 +49,10 @@ func (w writerUi) rerun() <-chan struct{} {
 func main() {
 	flag.Parse()
 
-	watchPath := "."
-
 	ui := ui(writerUi{os.Stdout, make(chan struct{})})
 	if !*term {
 		var err error
-		if ui, err = newWin(watchPath); err != nil {
+		if ui, err = newWin(*watchPath); err != nil {
 			log.Fatalln("Failed to open a win:", err)
 		}
 	}
@@ -67,7 +66,7 @@ func main() {
 	}
 
 	timer := time.NewTimer(0)
-	changes := startWatching(watchPath)
+	changes := startWatching(*watchPath)
 	lastRun := time.Time{}
 	lastChange := time.Now()
 
