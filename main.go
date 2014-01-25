@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	debug   = flag.Bool("d", false, "Enable debugging output")
+	debug   = flag.Bool("v", false, "Enable verbose debugging output")
 	term    = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
 	exclude = flag.String("x", "", "Exclude files and directories matching this regular expression")
 )
