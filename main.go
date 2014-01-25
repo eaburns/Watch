@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,9 +17,12 @@ import (
 )
 
 var (
-	debug = flag.Bool("d", false, "Enable debugging output")
-	term  = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
+	debug   = flag.Bool("d", false, "Enable debugging output")
+	term    = flag.Bool("t", false, "Just run in the terminal (instead of an acme win)")
+	exclude = flag.String("x", "", "Exclude files and directories matching this regular expression")
 )
+
+var excludeRe *regexp.Regexp
 
 const rebuildDelay = 200 * time.Millisecond
 
@@ -51,6 +55,14 @@ func main() {
 		var err error
 		if ui, err = newWin(watchPath); err != nil {
 			log.Fatalln("Failed to open a win:", err)
+		}
+	}
+
+	if exclude != nil {
+		var err error
+		excludeRe, err = regexp.Compile(*exclude)
+		if err != nil {
+			log.Fatalln("Bad regexp: ", *exclude)
 		}
 	}
 
@@ -184,6 +196,10 @@ func watchDir(w *fsnotify.Watcher, p string) {
 
 	for _, e := range ents {
 		sub := path.Join(p, e.Name())
+		if excludeRe != nil && excludeRe.MatchString(sub) {
+			debugPrint("excluding %s", sub)
+			continue
+		}
 		switch isdir, err := isDir(sub); {
 		case err != nil:
 			log.Printf("Failed to watch %s: %s", sub, err)
