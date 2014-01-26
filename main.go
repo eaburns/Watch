@@ -57,7 +57,7 @@ func main() {
 		}
 	}
 
-	if exclude != nil {
+	if *exclude != "" {
 		var err error
 		excludeRe, err = regexp.Compile(*exclude)
 		if err != nil {
