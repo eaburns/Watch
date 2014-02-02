@@ -13,7 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/go.exp/fsnotify"
+	// BUG(eaburns): Change back to code.google.com/p/go.exp/fsnotify once its API has settled.
+	"github.com/howeyc/fsnotify"
 )
 
 var (
