@@ -52,8 +52,11 @@ func main() {
 
 	ui := ui(writerUi{os.Stdout, make(chan struct{})})
 	if !*term {
-		var err error
-		if ui, err = newWin(*watchPath); err != nil {
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatalln("Failed to get the current directory")
+		}
+		if ui, err = newWin(wd); err != nil {
 			log.Fatalln("Failed to open a win:", err)
 		}
 	}
