@@ -13,8 +13,7 @@ import (
 	"strings"
 	"time"
 
-	// BUG(eaburns): Change back to code.google.com/p/go.exp/fsnotify once its API has settled.
-	"github.com/howeyc/fsnotify"
+	"github.com/go-fsnotify/fsnotify"
 )
 
 var (
@@ -141,10 +140,10 @@ func startWatching(p string) <-chan time.Time {
 func sendChanges(w *fsnotify.Watcher, changes chan<- time.Time) {
 	for {
 		select {
-		case err := <-w.Error:
+		case err := <-w.Errors:
 			log.Fatalf("Watcher error: %s\n", err)
 
-		case ev := <-w.Event:
+		case ev := <-w.Events:
 			time, err := modTime(ev.Name)
 			if err != nil {
 				log.Printf("Failed to get even time: %s", err)
@@ -153,7 +152,7 @@ func sendChanges(w *fsnotify.Watcher, changes chan<- time.Time) {
 
 			debugPrint("%s at %s", ev, time)
 
-			if ev.IsCreate() {
+			if ev.Op&fsnotify.Create != 0 {
 				switch isdir, err := isDir(ev.Name); {
 				case err != nil:
 					log.Printf("Couldn't check if %s is a directory: %s", ev.Name, err)
@@ -218,7 +217,7 @@ func watchDir(w *fsnotify.Watcher, p string) {
 func watch(w *fsnotify.Watcher, p string) {
 	debugPrint("Watching %s", p)
 
-	switch err := w.Watch(p); {
+	switch err := w.Add(p); {
 	case os.IsNotExist(err):
 		debugPrint("%s no longer exists", p)
 
