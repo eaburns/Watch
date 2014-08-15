@@ -33,23 +33,16 @@ type ui interface {
 	rerun() <-chan struct{}
 }
 
-type writerUi struct {
-	io.Writer
-	rr chan struct{} // nothing ever sent on this channel.
-}
+type writerUi struct{ io.Writer }
 
-func (w writerUi) redisplay(f func(io.Writer)) {
-	f(w)
-}
+func (w writerUi) redisplay(f func(io.Writer)) { f(w) }
 
-func (w writerUi) rerun() <-chan struct{} {
-	return w.rr
-}
+func (w writerUi) rerun() <-chan struct{} { return nil }
 
 func main() {
 	flag.Parse()
 
-	ui := ui(writerUi{os.Stdout, make(chan struct{})})
+	ui := ui(writerUi{os.Stdout})
 	if !*term {
 		wd, err := os.Getwd()
 		if err != nil {
