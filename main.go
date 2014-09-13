@@ -83,22 +83,12 @@ func main() {
 }
 
 func run(ui ui) time.Time {
-	r, w, err := os.Pipe()
-	if err != nil {
-		log.Fatalln("Failed to create a pipe:", err)
-	}
-
 	cmd := exec.Command(flag.Arg(0), flag.Args()[1:]...)
-	cmd.Stdout = w
-	cmd.Stderr = w
 
 	ui.redisplay(func(out io.Writer) {
+		cmd.Stdout = out
+		cmd.Stderr = out
 		io.WriteString(out, strings.Join(flag.Args(), " ")+"\n")
-		go func() {
-			if _, err := io.Copy(out, r); err != nil {
-				log.Fatalln("Failed to copy command output to the display:", err)
-			}
-		}()
 		if err := cmd.Run(); err != nil {
 			io.WriteString(out, err.Error()+"\n")
 		}
