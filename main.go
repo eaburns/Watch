@@ -83,9 +83,8 @@ func main() {
 }
 
 func run(ui ui) time.Time {
-	cmd := exec.Command(flag.Arg(0), flag.Args()[1:]...)
-
 	ui.redisplay(func(out io.Writer) {
+		cmd := exec.Command(flag.Arg(0), flag.Args()[1:]...)
 		cmd.Stdout = out
 		cmd.Stderr = out
 		io.WriteString(out, strings.Join(flag.Args(), " ")+"\n")
