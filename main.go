@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -40,7 +41,16 @@ func (w writerUi) redisplay(f func(io.Writer)) { f(w) }
 func (w writerUi) rerun() <-chan struct{} { return nil }
 
 func main() {
+	flag.Usage = func(){
+		fmt.Fprintf(os.Stderr, "Usage of %s: [flags] command [command args…]\n", os.Args[0])
+		flag.PrintDefaults()
+	}
 	flag.Parse()
+
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	ui := ui(writerUi{os.Stdout})
 	if !*term {
