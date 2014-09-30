@@ -42,6 +42,11 @@ func (w writerUi) rerun() <-chan struct{} { return nil }
 func main() {
 	flag.Parse()
 
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
 	ui := ui(writerUi{os.Stdout})
 	if !*term {
 		wd, err := os.Getwd()
