@@ -11,7 +11,7 @@ import (
 	"code.google.com/p/goplan9/plan9/acme"
 )
 
-type winUi struct {
+type winUI struct {
 	win *acme.Win
 	rr  chan struct{}
 }
@@ -47,7 +47,7 @@ func newWin(watchPath string) (ui, error) {
 	rerun := make(chan struct{})
 	go events(win, rerun)
 
-	return winUi{win, rerun}, nil
+	return winUI{win, rerun}, nil
 }
 
 func events(win *acme.Win, rerun chan<- struct{}) {
@@ -75,11 +75,11 @@ func events(win *acme.Win, rerun chan<- struct{}) {
 	os.Exit(0)
 }
 
-func (w winUi) rerun() <-chan struct{} {
+func (w winUI) rerun() <-chan struct{} {
 	return w.rr
 }
 
-func (w winUi) redisplay(f func(io.Writer)) {
+func (w winUI) redisplay(f func(io.Writer)) {
 	w.win.Addr(",")
 	w.win.Write("data", nil)
 

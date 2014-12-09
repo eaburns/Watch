@@ -34,11 +34,11 @@ type ui interface {
 	rerun() <-chan struct{}
 }
 
-type writerUi struct{ io.Writer }
+type writerUI struct{ io.Writer }
 
-func (w writerUi) redisplay(f func(io.Writer)) { f(w) }
+func (w writerUI) redisplay(f func(io.Writer)) { f(w) }
 
-func (w writerUi) rerun() <-chan struct{} { return nil }
+func (w writerUI) rerun() <-chan struct{} { return nil }
 
 func main() {
 	flag.Usage = func() {
@@ -52,7 +52,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ui := ui(writerUi{os.Stdout})
+	ui := ui(writerUI{os.Stdout})
 	if !*term {
 		wd, err := os.Getwd()
 		if err != nil {
