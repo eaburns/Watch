@@ -57,9 +57,11 @@ func events(win *acme.Win, rerun chan<- struct{}) {
 		case 'x', 'X':
 			switch string(e.Text) {
 			case "Get":
+				kill()
 				rerun <- struct{}{}
 
 			case "Del":
+				kill()
 				if err := win.Ctl("delete"); err != nil {
 					log.Fatalln("Failed to delete the window:", err)
 				}

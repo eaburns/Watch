@@ -10,8 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"reflect"
 	"regexp"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/go-fsnotify/fsnotify"
@@ -27,6 +30,15 @@ var (
 var excludeRe *regexp.Regexp
 
 const rebuildDelay = 200 * time.Millisecond
+
+// The name of the syscall.SysProcAttr.Setpgid field.
+const setpgidName = "Setpgid"
+
+var (
+	hasSetPGID bool
+	pid        = -1
+	pidLock    sync.Mutex
+)
 
 type ui interface {
 	redisplay(func(io.Writer))
@@ -46,6 +58,17 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	t := reflect.TypeOf(syscall.SysProcAttr{})
+	f, ok := t.FieldByName(setpgidName)
+	if ok && f.Type.Kind() == reflect.Bool {
+		debugPrint("syscall.SysProcAttr.Setpgid exists and is a bool")
+		hasSetPGID = true
+	} else if ok {
+		debugPrint("syscall.SysProcAttr.Setpgid exists but is a %s, not a bool", f.Type.Kind())
+	} else {
+		debugPrint("syscall.SysProcAttr.Setpgid does not exist")
+	}
 
 	if flag.NArg() == 0 {
 		flag.Usage()
@@ -97,14 +120,42 @@ func run(ui ui) time.Time {
 		cmd := exec.Command(flag.Arg(0), flag.Args()[1:]...)
 		cmd.Stdout = out
 		cmd.Stderr = out
+		if hasSetPGID {
+			var attr syscall.SysProcAttr
+			reflect.ValueOf(&attr).Elem().FieldByName(setpgidName).SetBool(true)
+			cmd.SysProcAttr = &attr
+		}
 		io.WriteString(out, strings.Join(flag.Args(), " ")+"\n")
-		if err := cmd.Run(); err != nil {
+		if err := cmd.Start(); err != nil {
 			io.WriteString(out, err.Error()+"\n")
 		}
+		pidLock.Lock()
+		pid = cmd.Process.Pid
+		pidLock.Unlock()
+		if err := cmd.Wait(); err != nil {
+			io.WriteString(out, err.Error()+"\n")
+		}
+		// Technically a race between the process finishing an setting pid = -1. ☹
+		pidLock.Lock()
+		pid = -1
+		pidLock.Unlock()
 		io.WriteString(out, time.Now().String()+"\n")
 	})
 
 	return time.Now()
+}
+
+func kill() {
+	pidLock.Lock()
+	p := pid
+	pidLock.Unlock()
+	if p >= 0 {
+		if hasSetPGID {
+			p = -p
+		}
+		debugPrint("Killing %d", p)
+		syscall.Kill(p, syscall.SIGKILL)
+	}
 }
 
 func startWatching(p string) <-chan time.Time {
