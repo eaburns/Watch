@@ -36,7 +36,7 @@ const setpgidName = "Setpgid"
 
 var (
 	hasSetPGID bool
-	pid        int
+	pid        = -1
 	pidLock    sync.Mutex
 )
 
