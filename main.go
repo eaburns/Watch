@@ -154,7 +154,7 @@ func kill() {
 			p = -p
 		}
 		debugPrint("Killing %d", p)
-		syscall.Kill(p, syscall.SIGKILL)
+		syscall.Kill(p, syscall.SIGTERM)
 	}
 }
 
