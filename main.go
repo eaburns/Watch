@@ -12,8 +12,8 @@ import (
 	"path"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -36,8 +36,7 @@ const setpgidName = "Setpgid"
 
 var (
 	hasSetPGID bool
-	pid        = -1
-	pidLock    sync.Mutex
+	killChan   = make(chan time.Time, 1)
 )
 
 type ui interface {
@@ -126,35 +125,58 @@ func run(ui ui) time.Time {
 			cmd.SysProcAttr = &attr
 		}
 		io.WriteString(out, strings.Join(flag.Args(), " ")+"\n")
+		start := time.Now()
 		if err := cmd.Start(); err != nil {
 			io.WriteString(out, err.Error()+"\n")
 		}
-		pidLock.Lock()
-		pid = cmd.Process.Pid
-		pidLock.Unlock()
-		if err := cmd.Wait(); err != nil {
-			io.WriteString(out, err.Error()+"\n")
+		if s := wait(start, cmd); s != 0 {
+			io.WriteString(out, "exit status "+strconv.Itoa(s)+"\n")
 		}
-		// Technically a race between the process finishing an setting pid = -1. ☹
-		pidLock.Lock()
-		pid = -1
-		pidLock.Unlock()
 		io.WriteString(out, time.Now().String()+"\n")
 	})
 
 	return time.Now()
 }
 
-func kill() {
-	pidLock.Lock()
-	p := pid
-	pidLock.Unlock()
-	if p >= 0 {
-		if hasSetPGID {
-			p = -p
+func wait(start time.Time, cmd *exec.Cmd) int {
+	var n int
+	tick := time.Tick(5 * time.Millisecond)
+	for {
+		select {
+		case t := <-killChan:
+			if t.Before(start) {
+				continue
+			}
+			p := cmd.Process.Pid
+			if hasSetPGID {
+				p = -p
+			}
+			if n == 0 {
+				debugPrint("Sending SIGTERM")
+				syscall.Kill(p, syscall.SIGTERM)
+			} else {
+				debugPrint("Sending SIGKILL")
+				syscall.Kill(p, syscall.SIGKILL)
+			}
+			n++
+
+		case <-tick:
+			var status syscall.WaitStatus
+			p := cmd.Process.Pid
+			switch q, err := syscall.Wait4(p, &status, syscall.WNOHANG, nil); {
+			case err != nil:
+				panic(err)
+			case q > 0:
+				return status.ExitStatus()
+			}
 		}
-		debugPrint("Killing %d", p)
-		syscall.Kill(p, syscall.SIGTERM)
+	}
+}
+
+func kill() {
+	select {
+	case killChan <- time.Now():
+		debugPrint("Killing")
 	}
 }
 
