@@ -141,7 +141,8 @@ func run(ui ui) time.Time {
 
 func wait(start time.Time, cmd *exec.Cmd) int {
 	var n int
-	tick := time.Tick(5 * time.Millisecond)
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
 	for {
 		select {
 		case t := <-killChan:
@@ -161,13 +162,14 @@ func wait(start time.Time, cmd *exec.Cmd) int {
 			}
 			n++
 
-		case <-tick:
+		case <-ticker.C:
 			var status syscall.WaitStatus
 			p := cmd.Process.Pid
 			switch q, err := syscall.Wait4(p, &status, syscall.WNOHANG, nil); {
 			case err != nil:
 				panic(err)
 			case q > 0:
+				cmd.Wait() // Clean up any goroutines created by cmd.Start.
 				return status.ExitStatus()
 			}
 		}
