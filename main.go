@@ -212,6 +212,10 @@ func sendChanges(w *fsnotify.Watcher, changes chan<- time.Time) {
 			log.Fatalf("Watcher error: %s\n", err)
 
 		case ev := <-w.Events:
+			if excludeRe != nil && excludeRe.MatchString(ev.Name) {
+				debugPrint("ignoring event for excluded %s", ev.Name)
+				continue
+			}
 			time, err := modTime(ev.Name)
 			if err != nil {
 				log.Printf("Failed to get even time: %s", err)
