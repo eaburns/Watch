@@ -13,3 +13,16 @@ something changed. By default, the output goes to an acme win.
 -p <path> specifies the path to watch (if it is a directory then it watches recursively)
 
 -x <regexp> specifies a regexp used to exclude files and directories from the watcher.
+
+Quick Start
+============
+Installation
+------------
+```bash
+go get github.com/eaburns/watch
+```
+Usage example
+-----
+```bash
+$GOPATH/bin/watch -v -t -p ./ go test -v
+```
